@@ -40,7 +40,7 @@
 version := 1.0
 xpi_dir = xpi
 xpi_files = install.rdf bootstrap.js
-xpi_name := switchToBlacklist-$(version).xpi
+xpi_name := switchToTabBlacklist-$(version).xpi
 
 # makes the xpi
 default: setup clean_dsstore make_xpi
