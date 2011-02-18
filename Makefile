@@ -37,7 +37,7 @@
 #XXXzpao A couple things we should do but won't yet:
 #        * read the version number from install.rdf
 
-version := 1.0
+version := 1.1
 xpi_dir = xpi
 xpi_files = install.rdf bootstrap.js
 xpi_name := switchToTabBlacklist-$(version).xpi
