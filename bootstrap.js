@@ -143,12 +143,30 @@ gTabsProgressListener = {
       // If this page is in the blacklist, then unregister it
       let shouldBlock = gBlacklist.some(function(bl) bl.test(aLocation.spec));
       if (shouldBlock) {
-        let window = aBrowser.ownerDocument.defaultView;
-        let autocomplete = window.gBrowser._placesAutocomplete;
-        autocomplete.unregisterOpenPage(aLocation);
-        delete aBrowser.registeredOpenURI;
+        removeEntryForBrowser(aBrowser);
         dump("\nBLOCKED: " + aLocation.spec + "\n");
       }
     }
   }
+}
+
+
+function removeEntryForBrowser(aBrowser) {
+  if (!aBrowser.registeredOpenURI)
+    return;
+
+  let window = aBrowser.ownerDocument.defaultView;
+  let autocomplete = window.gBrowser._placesAutocomplete;
+  autocomplete.unregisterOpenPage(aURI);
+  delete aBrowser.registeredOpenURI;
+}
+
+function addEntryForURI(aBrowser, aURI) {
+  if (aBrowser.registeredOpenURI)
+    return;
+
+  let window = aBrowser.ownerDocument.defaultView;
+  let autocomplete = window.gBrowser._placesAutocomplete;
+  autocomplete.registerOpenPage(aURI);
+  aBrowser.registeredOpenURI = aURI;
 }
