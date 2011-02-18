@@ -2,8 +2,8 @@
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
      xmlns:em="http://www.mozilla.org/2004/em-rdf#">
   <Description about="urn:mozilla:install-manifest">
-    <em:id>switchToBlacklist@zpao.com</em:id>
-    <em:name>Switch To Blacklist</em:name>
+    <em:id>switchToTabBlacklist@zpao.com</em:id>
+    <em:name>switch-to-tab Blacklist</em:name>
     <em:description>
       Black list some websites from showing up in switch to tab.
     </em:description>
