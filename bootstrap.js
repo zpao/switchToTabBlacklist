@@ -117,6 +117,8 @@ function observe(aSubject, aTopic, aData) {
       }, false);
       break;
     case "domwindowclosed":
+      if (aSubject.document.documentElement.getAttribute("windowtype") != "navigator:browser")
+        return;
       removeListener(aSubject);
       break;
     case "nsPref:changed":
