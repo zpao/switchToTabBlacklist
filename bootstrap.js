@@ -36,7 +36,8 @@
 
 const Cu = Components.utils;
 
-const PREFNAME = "switchToTabBlacklist.blacklist";
+const OLDPREFNAME = "switchToTabBlacklist.blacklist";
+const PREFNAME = "extension.switchToTabBlacklist.blacklist";
 const DEFAULT_BLACKLIST = [
   "http://maps.google.com/"
 ];
@@ -60,6 +61,9 @@ function install(data, reason) {
 }
 
 function startup(data, reason) {
+  // migrate as needed
+  migrate();
+
   // Observe pref changes
   Services.prefs.addObserver(PREFNAME, observe, false);
 
@@ -91,6 +95,14 @@ function uninstall(data, reason) {
     Services.prefs.clearUserPref(PREFNAME);
   }
   catch (e) { }
+}
+
+function migrate() {
+  if (Services.prefs.prefHasUserValue(OLDPREFNAME)) {
+    Services.prefs.setCharPref(PREFNAME, Services.prefs.getCharPref(OLDPREFNAME));
+    Services.prefs.clearUserPref(OLDPREFNAME);
+    log("migrated " + OLDPREFNAME + " to " + PREFNAME);
+  }
 }
 
 
