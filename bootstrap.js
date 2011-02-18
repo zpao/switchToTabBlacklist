@@ -74,6 +74,9 @@ function startup(data, reason) {
   // Process open windows
   forEachBrowserWindow(function(aWindow) {
     addListener(aWindow);
+    // To have this be really restartless, we should look at tabs that are
+    // already open, and block them
+    aWindow.gBrowser.browsers.forEach(maybeRemoveEntryForBrowser);
   });
 }
 
@@ -84,6 +87,7 @@ function shutdown(data, reason) {
   // Process open windows
   forEachBrowserWindow(function(aWindow) {
     removeListener(aWindow);
+    aWindow.gBrowser.browsers.forEach(maybeAddEntryForBrowser);
   });
 }
 
@@ -100,7 +104,7 @@ function addListener(aWindow) {
 }
 
 function removeListener(aWindow) {
-  aWindow.removeTabsProgressListener(gTabsProgressListener);
+  aWindow.gBrowser.removeTabsProgressListener(gTabsProgressListener);
 }
 
 
@@ -137,34 +141,39 @@ gTabsProgressListener = {
         return;
 
       // If this page is in the blacklist, then unregister it
-      let shouldBlock = gBlacklist.some(function(bl) bl.test(aLocation.spec));
-      if (shouldBlock) {
-        removeEntryForBrowser(aBrowser);
-        dump("\nBLOCKED: " + aLocation.spec + "\n");
-      }
+      maybeRemoveEntryForBrowser(aBrowser);
     }
   }
 }
 
-
-function removeEntryForBrowser(aBrowser) {
+function maybeRemoveEntryForBrowser(aBrowser) {
   if (!aBrowser.registeredOpenURI)
     return;
 
-  let window = aBrowser.ownerDocument.defaultView;
-  let autocomplete = window.gBrowser._placesAutocomplete;
-  autocomplete.unregisterOpenPage(aURI);
-  delete aBrowser.registeredOpenURI;
+  let shouldBlock = gBlacklist.some(function(bl) bl.test(aBrowser.registeredOpenURI.spec));
+  if (shouldBlock) {
+    let window = aBrowser.ownerDocument.defaultView;
+    let autocomplete = window.gBrowser._placesAutocomplete;
+    autocomplete.unregisterOpenPage(aBrowser.registeredOpenURI);
+    dump("\nBLOCKED: " + aBrowser.registeredOpenURI.spec + "\n");
+    delete aBrowser.registeredOpenURI;
+  }
 }
 
-function addEntryForURI(aBrowser, aURI) {
+
+function maybeAddEntryForBrowser(aBrowser) {
   if (aBrowser.registeredOpenURI)
     return;
 
+  // about:blank is explicitly blocked from being added, so don't add it back.
+  if (aBrowser.currentURI.spec == "about:blank")
+    return;
+
+  // At this point, we can probably assume that we can just add currentURI
   let window = aBrowser.ownerDocument.defaultView;
   let autocomplete = window.gBrowser._placesAutocomplete;
-  autocomplete.registerOpenPage(aURI);
-  aBrowser.registeredOpenURI = aURI;
+  autocomplete.registerOpenPage(aBrowser.currentURI);
+  aBrowser.registeredOpenURI = aBrowser.currentURI;
 }
 
 function forEachBrowserWindow(aFunction) {
