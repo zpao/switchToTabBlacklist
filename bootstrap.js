@@ -201,6 +201,7 @@ function maybeAddEntryForBrowser(aBrowser) {
   let autocomplete = window.gBrowser._placesAutocomplete;
   autocomplete.registerOpenPage(aBrowser.currentURI);
   aBrowser.registeredOpenURI = aBrowser.currentURI;
+  log("UNBLOCKED: " + aBrowser.currentURI.spec);
 }
 
 function forEachBrowserWindow(aFunction) {
