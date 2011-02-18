@@ -70,13 +70,25 @@ function startup(data, reason) {
 
   // register our observer
   Services.ww.registerNotification(windowWatcherObserver);
-  //XXXzpao Need to modify existing windows
+
+  // Process open windows
+  let windowsEnum = Services.wm.getEnumerator("navigator:browser");
+  while (windowsEnum.hasMoreElements()) {
+    let window = windowsEnum.getNext();
+    addListener(window);
+  }
 }
 
 function shutdown(data, reason) {
   // unregister our observer
   Services.ww.unregisterNotification(windowWatcherObserver);
-  //XXXzpao need to unmodify open windows
+
+  // Process open windows
+  let windowsEnum = Services.wm.getEnumerator("navigator:browser");
+  while (windowsEnum.hasMoreElements()) {
+    let window = windowsEnum.getNext();
+    removeListener(window);
+  }
 }
 
 function uninstall(data, reason) {
