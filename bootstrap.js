@@ -72,11 +72,9 @@ function startup(data, reason) {
   Services.ww.registerNotification(windowWatcherObserver);
 
   // Process open windows
-  let windowsEnum = Services.wm.getEnumerator("navigator:browser");
-  while (windowsEnum.hasMoreElements()) {
-    let window = windowsEnum.getNext();
-    addListener(window);
-  }
+  forEachBrowserWindow(function(aWindow) {
+    addListener(aWindow);
+  });
 }
 
 function shutdown(data, reason) {
@@ -84,11 +82,9 @@ function shutdown(data, reason) {
   Services.ww.unregisterNotification(windowWatcherObserver);
 
   // Process open windows
-  let windowsEnum = Services.wm.getEnumerator("navigator:browser");
-  while (windowsEnum.hasMoreElements()) {
-    let window = windowsEnum.getNext();
-    removeListener(window);
-  }
+  forEachBrowserWindow(function(aWindow) {
+    removeListener(aWindow);
+  });
 }
 
 function uninstall(data, reason) {
@@ -169,4 +165,14 @@ function addEntryForURI(aBrowser, aURI) {
   let autocomplete = window.gBrowser._placesAutocomplete;
   autocomplete.registerOpenPage(aURI);
   aBrowser.registeredOpenURI = aURI;
+}
+
+function forEachBrowserWindow(aFunction) {
+  let windowsEnum = Services.wm.getEnumerator("navigator:browser");
+  while (windowsEnum.hasMoreElements()) {
+    let window = windowsEnum.getNext();
+    if (!window.closed) {
+      aFunction.call(this, window);
+    }
+  }
 }
