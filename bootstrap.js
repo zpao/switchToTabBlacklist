@@ -40,10 +40,18 @@ const PREFNAME = "switchToTabBlacklist.blacklist";
 const DEFAULT_BLACKLIST = [
   "http://maps.google.com/"
 ];
+const DEBUG = false;
 
 let gBlacklist = [];
 
 Cu.import("resource://gre/modules/Services.jsm");
+
+function log(aMsg) {
+  if (!DEBUG) return;
+  aMsg = ("switchToTabBlacklist: " + aMsg + "\n");
+  dump(aMsg);
+  Services.console.logStringMessage(aMsg);
+}
 
 function install(data, reason) {
   // set default pref values
@@ -58,7 +66,7 @@ function startup(data, reason) {
     blacklist = JSON.parse(Services.prefs.getCharPref(PREFNAME));
   }
   catch (e) {
-    dump(e);
+    log(e);
     // On failure set the default blacklist
     Services.prefs.setCharPref(PREFNAME, JSON.stringify(DEFAULT_BLACKLIST));
     blacklist = DEFAULT_BLACKLIST;
@@ -66,7 +74,7 @@ function startup(data, reason) {
 
   // Turn the blacklist entries into actual RegExps
   gBlacklist = blacklist.map(function(bl) new RegExp(bl));
-  dump("blacklist: " + gBlacklist + "\n");
+  log("blacklist: " + gBlacklist);
 
   // register our observer
   Services.ww.registerNotification(windowWatcherObserver);
@@ -155,7 +163,7 @@ function maybeRemoveEntryForBrowser(aBrowser) {
     let window = aBrowser.ownerDocument.defaultView;
     let autocomplete = window.gBrowser._placesAutocomplete;
     autocomplete.unregisterOpenPage(aBrowser.registeredOpenURI);
-    dump("\nBLOCKED: " + aBrowser.registeredOpenURI.spec + "\n");
+    log("BLOCKED: " + aBrowser.registeredOpenURI.spec);
     delete aBrowser.registeredOpenURI;
   }
 }
