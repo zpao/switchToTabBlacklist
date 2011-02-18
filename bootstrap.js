@@ -100,18 +100,11 @@ function uninstall(data, reason) {
 
 
 function addListener(aWindow) {
-  let tpl = new TabsProgressListener();
-  tpl.window = aWindow;
-  aWindow.gBrowser.addTabsProgressListener(tpl);
-  aWindow.__STB_listener = tpl;
+  aWindow.gBrowser.addTabsProgressListener(gTabsProgressListener);
 }
 
 function removeListener(aWindow) {
-  if (aWindow.__STB_listener) {
-    aWindow.removeTabsProgressListener(aWindow.__STB_listener)
-    delete aWindow.__STB_listener;
-  }
-
+  aWindow.removeTabsProgressListener(gTabsProgressListener);
 }
 
 
@@ -135,9 +128,7 @@ function windowWatcherObserver(aSubject, aTopic, aData) {
 }
 
 
-function TabsProgressListener() {}
-TabsProgressListener.prototype = {
-  window: null,
+gTabsProgressListener = {
   onLocationChange: function TPL_onLocationChange(aBrowser, aWebProgress, aRequest, aLocation) {
     // OnLocationChange is called for both the top-level content
     // and the subframes.
@@ -152,10 +143,11 @@ TabsProgressListener.prototype = {
       // If this page is in the blacklist, then unregister it
       let shouldBlock = gBlacklist.some(function(bl) bl.test(aLocation.spec));
       if (shouldBlock) {
-        dump("\nBLOCKED: " + aLocation.spec + "\n");
-        let autocomplete = this.window.gBrowser._placesAutocomplete;
-        delete aBrowser.registeredOpenURI;
+        let window = aBrowser.ownerDocument.defaultView;
+        let autocomplete = window.gBrowser._placesAutocomplete;
         autocomplete.unregisterOpenPage(aLocation);
+        delete aBrowser.registeredOpenURI;
+        dump("\nBLOCKED: " + aLocation.spec + "\n");
       }
     }
   }
