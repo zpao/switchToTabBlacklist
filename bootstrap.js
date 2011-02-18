@@ -60,37 +60,24 @@ function install(data, reason) {
 }
 
 function startup(data, reason) {
-  // Read the blacklist from prefs
-  let blacklist;
-  try {
-    blacklist = JSON.parse(Services.prefs.getCharPref(PREFNAME));
-  }
-  catch (e) {
-    log(e);
-    // On failure set the default blacklist
-    Services.prefs.setCharPref(PREFNAME, JSON.stringify(DEFAULT_BLACKLIST));
-    blacklist = DEFAULT_BLACKLIST;
-  }
-
-  // Turn the blacklist entries into actual RegExps
-  gBlacklist = blacklist.map(function(bl) new RegExp(bl));
-  log("blacklist: " + gBlacklist);
+  // Observe pref changes
+  Services.prefs.addObserver(PREFNAME, observe, false);
 
   // register our observer
-  Services.ww.registerNotification(windowWatcherObserver);
+  Services.ww.registerNotification(observe);
 
   // Process open windows
   forEachBrowserWindow(function(aWindow) {
     addListener(aWindow);
-    // To have this be really restartless, we should look at tabs that are
-    // already open, and block them
-    aWindow.gBrowser.browsers.forEach(maybeRemoveEntryForBrowser);
   });
+
+  // read the blacklist and process open windows
+  setupAndProcessBlacklist();
 }
 
 function shutdown(data, reason) {
   // unregister our observer
-  Services.ww.unregisterNotification(windowWatcherObserver);
+  Services.ww.unregisterNotification(observe);
 
   // Process open windows
   forEachBrowserWindow(function(aWindow) {
@@ -116,7 +103,7 @@ function removeListener(aWindow) {
 }
 
 
-function windowWatcherObserver(aSubject, aTopic, aData) {
+function observe(aSubject, aTopic, aData) {
   switch (aTopic) {
     case "domwindowopened":
       // The window doesn't know it's going to have a gBrowser yet, so we need to wait for load
@@ -132,8 +119,40 @@ function windowWatcherObserver(aSubject, aTopic, aData) {
     case "domwindowclosed":
       removeListener(aSubject);
       break;
+    case "nsPref:changed":
+      setupAndProcessBlacklist();
+      break;
   }
 }
+
+// Read the pref, iterate over each window unblocking & blocking
+function setupAndProcessBlacklist(aBlacklist) {
+  let blacklist;
+  try {
+    blacklist = JSON.parse(Services.prefs.getCharPref(PREFNAME));
+  }
+  catch (e) {
+    log(e);
+    // On failure set the default blacklist
+    Services.prefs.setCharPref(PREFNAME, JSON.stringify(DEFAULT_BLACKLIST));
+    blacklist = DEFAULT_BLACKLIST;
+  }
+
+  // Turn the blacklist entries into actual RegExps
+  gBlacklist = blacklist.map(function(bl) new RegExp(bl));
+  log("blacklist updated: " + gBlacklist);
+
+  // Now process the blacklist. Loop over each browser in each window and
+  // unblock then block as needed. This will re-add entries that were blocked
+  // before and block new (and old) entries again.
+  forEachBrowserWindow(function(aWindow) {
+    aWindow.gBrowser.browsers.forEach(function(aBrowser) {
+      maybeAddEntryForBrowser(aBrowser);
+      maybeRemoveEntryForBrowser(aBrowser);
+    })
+  });
+}
+
 
 
 gTabsProgressListener = {
