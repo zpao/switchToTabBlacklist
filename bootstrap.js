@@ -36,7 +36,7 @@
 
 const Cu = Components.utils;
 
-const PREFNAME = "switchToBlacklist.blacklist";
+const PREFNAME = "switchToTabBlacklist.blacklist";
 const DEFAULT_BLACKLIST = [
   "http://maps.google.com/"
 ];
