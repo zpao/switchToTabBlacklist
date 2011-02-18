@@ -48,18 +48,25 @@ Cu.import("resource://gre/modules/Services.jsm");
 function install(data, reason) {
   // set default pref values
   if (!Services.prefs.prefHasUserValue(PREFNAME))
-    Services.prefs.setCharPref(PREFNAME, DEFAULT_BLACKLIST.join("|"));
+    Services.prefs.setCharPref(PREFNAME, JSON.stringify(DEFAULT_BLACKLIST));
 }
 
 function startup(data, reason) {
   // Read the blacklist from prefs
+  let blacklist;
   try {
-    gBlacklist = Services.prefs.getCharPref(PREFNAME).split("|");
+    blacklist = JSON.parse(Services.prefs.getCharPref(PREFNAME));
   }
   catch (e) {
     dump(e);
+    // On failure set the default blacklist
+    Services.prefs.setCharPref(PREFNAME, JSON.stringify(DEFAULT_BLACKLIST));
+    blacklist = DEFAULT_BLACKLIST;
   }
-  dump("blacklist: " + JSON.stringify(gBlacklist) + "\n");
+
+  // Turn the blacklist entries into actual RegExps
+  gBlacklist = blacklist.map(function(bl) new RegExp(bl));
+  dump("blacklist: " + gBlacklist + "\n");
 
   // register our observer
   Services.ww.registerNotification(windowWatcherObserver);
@@ -131,7 +138,8 @@ TabsProgressListener.prototype = {
         return;
 
       // If this page is in the blacklist, then unregister it
-      if (gBlacklist.indexOf(aLocation.spec) > -1) {
+      let shouldBlock = gBlacklist.some(function(bl) bl.test(aLocation.spec));
+      if (shouldBlock) {
         dump("\nBLOCKED: " + aLocation.spec + "\n");
         let autocomplete = this.window.gBrowser._placesAutocomplete;
         delete aBrowser.registeredOpenURI;
